@@ -4,7 +4,7 @@ from requests import HTTPError
 import logging
 import os
 
-log = logging.getLogger('atlassian.confluence')
+log = logging.getLogger(__name__)
 
 
 class Confluence(AtlassianRestAPI):
@@ -18,17 +18,54 @@ class Confluence(AtlassianRestAPI):
 
     def page_exists(self, space, title):
         try:
-            self.get_page_by_title(space, title)
-            log.info('Page "{title}" already exists in space "{space}"'.format(space=space, title=title))
-            return True
+            if self.get_page_by_title(space, title):
+                log.info('Page "{title}" already exists in space "{space}"'.format(space=space, title=title))
+                return True
+            else:
+                log.info('Page does not exist because did not find by title search')
+                return False
         except (HTTPError, KeyError, IndexError):
             log.info('Page "{title}" does not exist in space "{space}"'.format(space=space, title=title))
             return False
 
+    def get_page_child_by_type(self, page_id, type='page', start=None, limit=None):
+        """
+        Provide content by type (page, blog, comment)
+        :param page_id: A string containing the id of the type content container.
+        :param type:
+        :param start: OPTIONAL: The start point of the collection to return. Default: None (0).
+        :param limit: OPTIONAL: how many items should be returned after the start index. Default: Site limit.
+        :return:
+        """
+        params = {}
+        if start is not None:
+            params["start"] = int(start)
+        if limit is not None:
+            params["limit"] = int(limit)
+
+        url = 'rest/api/content/{page_id}/child/{type}'.format(page_id=page_id, type=type)
+        log.info(url)
+        try:
+            return self.get(url)
+        except IndexError as e:
+            log.error(e)
+            return None
+
     def get_page_id(self, space, title):
-        return self.get_page_by_title(space, title).get('id')
+        """
+        Provide content id from search result by title and space
+        :param space: SPACE key
+        :param title: title
+        :return:
+        """
+        return (self.get_page_by_title(space, title) or {}).get('id')
 
     def get_page_space(self, page_id):
+        """
+        Provide space key from content id
+        :param page_id: content ID
+        :return:
+        """
         return self.get_page_by_id(page_id, expand='space')['space']['key']
 
     def get_page_by_title(self, space, title, start=None, limit=None):
@@ -56,10 +93,16 @@ class Confluence(AtlassianRestAPI):
         try:
             return self.get(url, params=params).get('results')[0]
         except IndexError as e:
-            logging.error(e)
+            log.error(e)
             return None
 
     def get_page_by_id(self, page_id, expand=None):
+        """
+        Get page by ID
+        :param page_id: Content ID
+        :param expand: OPTIONAL: expand e.g. history
+        :return:
+        """
         url = 'rest/api/content/{page_id}?expand={expand}'.format(page_id=page_id, expand=expand)
         return self.get(url)
 
@@ -132,7 +175,7 @@ class Confluence(AtlassianRestAPI):
                                                                                                      limit=limit,
                                                                                                      start=start,
                                                                                                      status=status)
-        return self.get(url)['results']
+        return (self.get(url) or {}).get('results')
 
     def get_all_draft_pages_from_space(self, space, start=0, limit=500, status='draft'):
         """
@@ -149,7 +192,7 @@ class Confluence(AtlassianRestAPI):
                                                                                                      limit=limit,
                                                                                                      start=start,
                                                                                                      status=status)
-        return self.get(url)['results']
+        return (self.get(url) or {}).get('results')
 
     def get_all_restictions_for_content(self, content_id):
         """
@@ -208,7 +251,7 @@ class Confluence(AtlassianRestAPI):
                             fixed system limits. Default: 500
         """
         url = 'rest/api/space?limit={limit}&start={start}'.format(limit=limit, start=start)
-        return self.get(url)['results']
+        return (self.get(url) or {}).get('results')
 
     def attach_file(self, filename, page_id=None, title=None, space=None, comment=None):
         """
@@ -255,6 +298,12 @@ class Confluence(AtlassianRestAPI):
         return self.get('rest/api/content/{0}/history'.format(page_id))
 
     def is_page_content_is_already_updated(self, page_id, body):
+        """
+        Compare content and check is already updated or not
+        :param page_id: Content ID for retrieve storage value
+        :param body: Body for compare it
+        :return: True if the same
+        """
         confluence_content = self.get_page_by_id(page_id, expand='body.storage')['body']['storage']['value']
         confluence_content = confluence_content.replace('&oacute;', u'ó')
 
@@ -409,7 +458,7 @@ class Confluence(AtlassianRestAPI):
         url = 'rest/api/group?limit={limit}&start={start}'.format(limit=limit,
                                                                   start=start)
 
-        return self.get(url)['results']
+        return (self.get(url) or {}).get('results')
 
     def get_group_members(self, group_name='confluence-users', start=0, limit=1000):
         """
@@ -423,4 +472,15 @@ class Confluence(AtlassianRestAPI):
         url = 'rest/api/group/{group_name}/member?limit={limit}&start={start}'.format(group_name=group_name,
                                                                                       limit=limit,
                                                                                       start=start)
-        return self.get(url)['results']
+        return (self.get(url) or {}).get('results')
+
+    def get_space(self, space_key, expand='description.plain,homepage'):
+        """
+        Get information about a space through space key
+        :param space_key: The unique space key name
+        :param expand: OPTIONAL: additional info from description, homepage
+        :return: Returns the space along with its ID
+        """
+        url = 'rest/api/space/{space_key}?expand={expand}'.format(space_key=space_key,
+                                                                  expand=expand)
+        return self.get(url)

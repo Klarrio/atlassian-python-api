@@ -2,13 +2,11 @@ import os
 from setuptools import find_packages
 from setuptools import setup
 
-
 with open(os.path.join('atlassian', 'VERSION')) as file:
     version = file.read().strip()
 
 with open('README.rst') as file:
     long_description = file.read()
-
 
 setup(
     name='atlassian-python-api',
@@ -20,9 +18,9 @@ setup(
 
     author='Matt Harasymczuk',
     author_email='matt@astrotech.io',
-    url='http://devops.astrotech.io/issue-tracker/jira.html',
-    keywords='jira confluence bitbucket bamboo rest api',
-    
+    url='https://github.com/AstroMatt/atlassian-python-api',
+    keywords='atlassian jira confluence bitbucket bamboo crowd portfolio rest api',
+
     packages=find_packages(),
     package_dir={'atlassian': 'atlassian'},
     include_package_data=True,
@@ -37,8 +35,10 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
+        'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
+        'Intended Audience :: Information Technology',
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
         'Operating System :: OS Independent',
@@ -53,10 +53,9 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Topic :: Utilities',
-	'Topic :: Internet',
+        'Topic :: Internet',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Libraries :: Application Frameworks']
 )
-

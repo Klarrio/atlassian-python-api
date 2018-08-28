@@ -2,8 +2,7 @@
 import logging
 from .rest_client import AtlassianRestAPI
 
-
-log = logging.getLogger('atlassian.portfolio')
+log = logging.getLogger(__name__)
 
 
 class Portfolio(AtlassianRestAPI):
